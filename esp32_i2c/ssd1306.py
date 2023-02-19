@@ -1,5 +1,6 @@
 import _thread
 import time
+import json
 
 def swap(a, b):
     temp = a
@@ -208,11 +209,41 @@ class SSD1306:
             return False
         return True
 
+    def _fb_put_char(self, char, x0, y0, operation):
+        char_array = bytes([int(val) for val in self._font.get(char)])
+        bytes_per_line = len(self._font.get(char)) / self._font_hight
+
+        byte_idx = 0
+        bit_idx = 0
+        x = x0;
+
+        for byte in char_array:
+            if byte_idx >= bytes_per_line:
+                byte_idx = 0
+                x = x0;
+                bit_idx = 0
+                y0 += 1
+            
+            for bit in range(8):
+                if byte & 0x01:
+                    self._fb_set_pixel(x, y0, operation)
+                byte >>= 1
+                x += 1
+                bit_idx += 1
+                if bit_idx >= self._font_width:
+                    break
+
+            byte_idx += 1
+        
+        return x
 	
     def __init__(self, i2c_bus, addr):
         self._i2c_bus = i2c_bus
         self._addr = addr
         self._need_update = True
+        self._font_width = 0
+        self._font_hight = 0
+        self._font = None
         
         devices = self._i2c_bus.scan()
         if not devices or self._addr not in devices:
@@ -441,3 +472,52 @@ class SSD1306:
         self._need_update = True
         self.drawCircle(x0, y0, r, operation)
 
+    def fontSet(self, font_file):
+        with open(font_file, "r") as font_fd:
+            font = json.loads(font_fd.read())
+
+        if not font:
+            return False
+        
+        self._font_width = font.get("width")
+        self._font_hight = font.get("hight")
+        self._font = font.get("chars")
+
+        if self._font_width and self._font_hight and self._font:
+            return True
+        return False
+
+    def putChar(self, char, x0, y0, operation):
+        x0 = self._check_x(x0)
+        y0 = self._check_y(y0)
+
+        if x0 < 0 or y0 < 0:
+            return
+        
+        if not self._font_width or not self._font_hight or not self._font:
+            return
+        
+        with self.fb_lock:
+            self._fb_put_char(char, x0, y0, operation)
+
+            self._need_update = True
+
+    def putString(self, strng, x0, y0, operation):
+        x0 = self._check_x(x0)
+        y0 = self._check_y(y0)
+
+        if x0 < 0 or y0 < 0:
+            return
+        
+        if not self._font_width or not self._font_hight or not self._font:
+            return
+        
+        with self.fb_lock:
+            for char in strng:
+                if x0 + self._font_width >= self.LCD_WIDTH:
+                    break
+
+                x0 = self._fb_put_char(char, x0, y0, operation)
+                x0 += 1
+
+            self._need_update = True

@@ -15,9 +15,15 @@ print(devices)
 
 
 display = SSD1306(i2c, devices[0])
+if not display.fontSet("/fonts/font_7x12.json"):
+    print("Couldn't set font")
 
 count = 0
 
+display.clear()
+display.fillRectangle(0, 0, SSD1306.LCD_WIDTH - 1, SSD1306.LCD_HEIGHT - 1, SSD1306.OPERATION_XOR)
+display.putString('Hello from ESP!', 5, 20, SSD1306.OPERATION_XOR)
+time.sleep(5)
 display.clear()
 while True:
 
