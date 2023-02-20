@@ -21,8 +21,14 @@ if not display.fontSet("/fonts/font_7x12.json"):
 count = 0
 
 display.clear()
-display.fillRectangle(0, 0, SSD1306.LCD_WIDTH - 1, SSD1306.LCD_HEIGHT - 1, SSD1306.OPERATION_XOR)
-display.putString('Hello from ESP!', 5, 20, SSD1306.OPERATION_XOR)
+# display.fillRectangle(0, 0, SSD1306.LCD_WIDTH - 1, SSD1306.LCD_HEIGHT - 1, SSD1306.OPERATION_XOR)
+display.putString('Hello from ESP!', 5, 10, SSD1306.OPERATION_XOR)
+
+
+if not display.fontSet("/fonts/font_lcd_13x21.json"):
+    print("Couldn't set font")
+else:
+    display.putString('12:25', 10, 30, SSD1306.OPERATION_XOR)
 time.sleep(5)
 display.clear()
 while True:
